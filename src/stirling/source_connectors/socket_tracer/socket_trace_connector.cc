@@ -1256,8 +1256,8 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   // Note that we do this after filtering to avoid burning CPU cycles unnecessarily.
   protocols::http::PreProcessMessage(&resp_message);
 
-  md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
-                conn_tracker.conn_id().upid.start_time_ticks);
+  auto const& conn_id = conn_tracker.conn_id();
+  md::UPID upid(ctx->GetASID(), conn_id.upid.pid, conn_id.upid.start_time_ticks);
 
   HTTPContentType content_type = HTTPContentType::kUnknown;
   if (protocols::http::IsJSONContent(resp_message)) {
@@ -1267,6 +1267,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   DataTable::RecordBuilder<&kHTTPTable> r(data_table, resp_message.timestamp_ns);
   r.Append<r.ColIndex("time_")>(resp_message.timestamp_ns);
   r.Append<r.ColIndex("upid")>(upid.value());
+  r.Append<r.ColIndex("cgid")>(conn_id.cgid);
   // Note that there is a string copy here,
   // But std::move is not allowed because we re-use conn object.
   r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
@@ -1318,8 +1319,8 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   int64_t resp_status;
   ECHECK(absl::SimpleAtoi(resp_stream->headers().ValueByKey(":status", "-1"), &resp_status));
 
-  md::UPID upid(ctx->GetASID(), conn_tracker.conn_id().upid.pid,
-                conn_tracker.conn_id().upid.start_time_ticks);
+  auto const& conn_id = conn_tracker.conn_id();
+  md::UPID upid(ctx->GetASID(), conn_id.upid.pid, conn_id.upid.start_time_ticks);
 
   std::string path = req_stream->headers().ValueByKey(protocols::http2::headers::kPath);
 
@@ -1333,6 +1334,7 @@ void SocketTraceConnector::AppendMessage(ConnectorContext* ctx, const ConnTracke
   DataTable::RecordBuilder<&kHTTPTable> r(data_table, resp_stream->timestamp_ns);
   r.Append<r.ColIndex("time_")>(resp_stream->timestamp_ns);
   r.Append<r.ColIndex("upid")>(upid.value());
+  r.Append<r.ColIndex("cgid")>(conn_id.cgid);
   r.Append<r.ColIndex("remote_addr")>(conn_tracker.remote_endpoint().AddrStr());
   r.Append<r.ColIndex("remote_port")>(conn_tracker.remote_endpoint().port());
   r.Append<r.ColIndex("local_addr")>(conn_tracker.local_endpoint().AddrStr());
