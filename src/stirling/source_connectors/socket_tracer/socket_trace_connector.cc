@@ -1776,7 +1776,7 @@ void SocketTraceConnector::TransferConnStats(ConnectorContext* ctx, DataTable* d
 
       r.Append<idx::kTime>(time);
       r.Append<idx::kUPID>(upid.value());
-      r.Append<idx::kCGID>(UINT64_MAX);
+      r.Append<idx::kCGID>(stats.cgid_curr);
       r.Append<idx::kRemoteAddr>(key.remote_addr);
       r.Append<idx::kRemotePort>(key.remote_port);
       // TODO(@benkilimnik: uncomment when we have local addr/port in the key)
