@@ -51,7 +51,7 @@ class CGroupMetadataReader : public NotCopyable {
    * Note: that since this function contains inherent races with the system state and can return
    * errors when files fail to read because they have been deleted while the read was in progress.
    */
-  virtual Status ReadPIDs(PodQOSClass qos_class, std::string_view pod_id,
+  virtual StatusOr<uint64_t> ReadPIDs(PodQOSClass qos_class, std::string_view pod_id,
                           std::string_view container_id, ContainerType container_type,
                           absl::flat_hash_set<uint32_t>* pid_set) const;
 

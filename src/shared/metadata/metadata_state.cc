@@ -253,6 +253,7 @@ Status K8sMetadataState::HandlePodUpdate(const PodUpdate& update) {
 
   auto it = k8s_objects_by_id_.find(object_uid);
   if (it == k8s_objects_by_id_.end()) {
+    //  Cgroup could be added here or to the ContainerInfo
     auto pod = std::make_unique<PodInfo>(update);
     VLOG(1) << "Adding Pod: " << pod->DebugString();
     it = k8s_objects_by_id_.try_emplace(object_uid, std::move(pod)).first;
@@ -579,6 +580,7 @@ std::shared_ptr<AgentMetadataState> AgentMetadataState::CloneToShared() const {
     state->pids_by_upid_[k] = v->Clone();
   }
   state->upids_ = upids_;
+  state->cgroups_ = cgroups_;
   return state;
 }
 

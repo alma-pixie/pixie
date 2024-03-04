@@ -307,6 +307,16 @@ class UPIDToContainerNameUDF : public ScalarUDF {
   static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_PEM; }
 };
 
+inline const px::md::PodInfo* CgroupToPod(const px::md::AgentMetadataState* mds,
+                                        types::UInt128Value cgroup_value) {
+  auto pod_id_status = mds->GetCgroupPodId(cgroup_value.Low64());
+  if (!pod_id_status.ok()) return nullptr;
+  LOG(WARNING) << absl::Substitute("Trying to find cgroup ID=$0 with pod id=$1", cgroup_value.Low64(), pod_id_status.ValueOrDie());
+  auto pod_info = mds->k8s_metadata_state().PodInfoByID(pod_id_status.ValueOrDie());
+  LOG(WARNING) << absl::Substitute("Found Pod=$0", pod_info->name());
+  return pod_info;
+}
+
 inline const px::md::PodInfo* UPIDtoPod(const px::md::AgentMetadataState* md,
                                         types::UInt128Value upid_value) {
   auto container_info = UPIDToContainer(md, upid_value);
@@ -370,6 +380,37 @@ class UPIDToPodIDUDF : public ScalarUDF {
         .Example("df.pod_id = px.upid_to_pod_id(df.upid)")
         .Arg("upid", "The UPID of the process to get the pod ID for.")
         .Returns("The k8s pod ID for the UPID passed in.");
+  }
+
+  // This UDF can currently only run on PEMs, because only PEMs have the UPID information.
+  static udfspb::UDFSourceExecutor Executor() { return udfspb::UDFSourceExecutor::UDF_PEM; }
+};
+
+class CgidToPodCgroupUDF : public ScalarUDF {
+ public:
+  StringValue Exec(FunctionContext* ctx, UInt128Value cgroup_value) {
+    auto md = GetMetadataState(ctx);
+    auto pod_info = CgroupToPod(md, cgroup_value);
+    if (pod_info == nullptr) {
+      return "";
+    }
+    return absl::Substitute("$0/$1", pod_info->ns(), pod_info->name());
+  }
+
+  static udf::InfRuleVec SemanticInferenceRules() {
+    return {udf::ExplicitRule::Create<CgidToPodCgroupUDF>(types::ST_POD_NAME, {types::ST_NONE})};
+  }
+
+  static udf::ScalarUDFDocBuilder Doc() {
+    return udf::ScalarUDFDocBuilder("Get the Kubernetes Pod Name from a UPID.")
+        .Details(
+            "Gets the name of Kubernetes pod corresponding to the cgroup"
+            "with the given Unique Process ID (UPID) is running on. "
+            "If the UPID has no associated Kubernetes Pod, this function will return an empty "
+            "string")
+        .Example("df.pod_name = px.cgroup_to_pod_name(df.cgroup)")
+        .Arg("cgroup", "The UPID of the process to get the pod name for.")
+        .Returns("The k8s pod name for the UPID passed in.");
   }
 
   // This UDF can currently only run on PEMs, because only PEMs have the UPID information.

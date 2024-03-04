@@ -264,31 +264,40 @@ Status ProcessPIDUpdates(
       VLOG(1) << absl::Substitute("Found a running container in a deleted pod [cid=$0, pod_id=$1]",
                                   cid, pod_id);
       cinfo->set_stop_time_ns(pod_info->stop_time_ns());
+      // TODO(ddelnano): cgroup needs to be removed here
       continue;
     }
 
+    // Get cgroup ID and then 
+    // fs::Stat()
+
     absl::flat_hash_set<uint32_t> cgroups_active_pids;
-    Status s = md_reader->ReadPIDs(pod_info->qos_class(), pod_id, cid, cinfo->type(),
+    StatusOr<uint64_t> cgroup_or = md_reader->ReadPIDs(pod_info->qos_class(), pod_id, cid, cinfo->type(),
                                    &cgroups_active_pids);
-    if (!s.ok()) {
+    if (!cgroup_or.ok()) {
       // Container probably died, we will eventually get a message from MDS and everything in that
       // container will be marked dead.
       LOG(WARNING) << absl::Substitute("Failed to read PID info for pod=$0, cid=$1 [msg=$2]",
-                                       pod_id, cid, s.msg());
+                                       pod_id, cid, cgroup_or.msg());
 
       // Don't wait for MDS to send the container death information; set the stop time right away.
       // This is so we stop trying to read stats for this non-existent container.
       // NOTE: Currently, MDS sends pods that do no belong to this Agent, so this is actually
       // required to avoid repeatedly printing out the warning message above.
-      if (error::IsNotFound(s)) {
+      if (error::IsNotFound(cgroup_or.status())) {
         cinfo->set_stop_time_ns(ts);
         for (const auto& upid : cinfo->active_upids()) {
           md->MarkUPIDAsStopped(upid, ts);
         }
         cinfo->mutable_active_upids()->clear();
+        // Cgroup to pod mapping needs to exist in order to support old queries.
+        // Research upids_ lifecycle that has the same requirements.
+        /* md->MarkCgroupStopped(cgroup_id); */
       }
       continue;
     }
+
+    md->AddCgroup(cgroup_or.ValueOrDie(), pod_id);
 
     ProcessContainerPIDUpdates(cid, ts, proc_parser, md, cinfo->mutable_active_upids(),
                                &cgroups_active_pids, pid_updates);

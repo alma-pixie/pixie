@@ -23,6 +23,7 @@
 
 #include "src/common/base/base.h"
 #include "src/common/base/file.h"
+#include "src/common/fs/fs_wrapper.h"
 #include "src/shared/metadata/cgroup_metadata_reader.h"
 #include "src/shared/metadata/k8s_objects.h"
 
@@ -72,7 +73,7 @@ StatusOr<std::string> CGroupMetadataReader::PodPath(PodQOSClass qos_class, std::
   return error::Internal("No valid cgroup path resolver.");
 }
 
-Status CGroupMetadataReader::ReadPIDs(PodQOSClass qos_class, std::string_view pod_id,
+StatusOr<uint64_t> CGroupMetadataReader::ReadPIDs(PodQOSClass qos_class, std::string_view pod_id,
                                       std::string_view container_id, ContainerType container_type,
                                       absl::flat_hash_set<uint32_t>* pid_set) const {
   CHECK(pid_set != nullptr);
@@ -81,6 +82,10 @@ Status CGroupMetadataReader::ReadPIDs(PodQOSClass qos_class, std::string_view po
   // containers.
 
   PX_ASSIGN_OR_RETURN(std::string fpath, PodPath(qos_class, pod_id, container_id, container_type));
+  std::string cgroup_root_fpath = fpath;
+  // Remove "/cgroup.procs" suffix
+  cgroup_root_fpath.erase(cgroup_root_fpath.end() - 13, cgroup_root_fpath.end());
+  std::filesystem::path cgroup_root = cgroup_root_fpath;
 
   std::ifstream ifs(fpath);
   if (!ifs) {
@@ -100,7 +105,9 @@ Status CGroupMetadataReader::ReadPIDs(PodQOSClass qos_class, std::string_view po
     }
     pid_set->emplace(pid);
   }
-  return Status::OK();
+  PX_ASSIGN_OR_RETURN(struct stat cgroup_stat, fs::Stat(cgroup_root));
+  uint64_t cgroup_id = cgroup_stat.st_ino;
+  return cgroup_id;
 }
 
 }  // namespace md

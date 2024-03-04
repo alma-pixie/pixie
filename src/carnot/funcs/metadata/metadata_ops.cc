@@ -116,6 +116,7 @@ void RegisterMetadataOpsOrDie(px::carnot::udf::Registry* registry) {
   registry->RegisterOrDie<UPIDToStartTSUDF>("upid_to_start_ts");
   registry->RegisterOrDie<UPIDToPodIDUDF>("upid_to_pod_id");
   registry->RegisterOrDie<UPIDToPodNameUDF>("upid_to_pod_name");
+  registry->RegisterOrDie<CgidToPodCgroupUDF>("cgid_to_pod_cgroup");
   registry->RegisterOrDie<UPIDToPodQoSUDF>("upid_to_pod_qos");
   registry->RegisterOrDie<UPIDToPodStatusUDF>("upid_to_pod_status");
   registry->RegisterOrDie<UPIDToServiceNameUDF>("upid_to_service_name");

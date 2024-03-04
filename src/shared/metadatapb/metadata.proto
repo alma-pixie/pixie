@@ -30,6 +30,9 @@ enum MetadataType {
   PID = 2;
   // The incremental id assigned by the metadata service.
   ASID = 3;
+  CGROUP = 4;
+  CGID = 5;
+
   // IDs are 1000-1999
   CONTAINER_ID = 1000;
   POD_ID = 1001;
@@ -38,6 +41,7 @@ enum MetadataType {
   REPLICASET_ID = 1004;
   // NAMES are 2000-2999
   POD_NAME = 2001;
+  POD_CGROUP = 2009;
   SERVICE_NAME = 2002;
   DEPLOYMENT_NAME = 2003;
   NAMESPACE = 2004;

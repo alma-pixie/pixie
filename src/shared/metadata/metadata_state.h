@@ -385,12 +385,34 @@ class AgentMetadataState : NotCopyable {
     return nullptr;
   }
 
+  void AddCgroup(uint64_t cgroup_id, UID pod_id) {
+      if (cgroups_.contains(cgroup_id)) {
+          VLOG(1) << absl::Substitute("cgroup id=$0 already added, skipping", cgroup_id);
+          return;
+      }
+      LOG(WARNING) << absl::Substitute("Adding cgroup=$0 -> pod_id=$1", cgroup_id, pod_id);
+      cgroups_[cgroup_id] = pod_id;
+  }
+
   void AddUPID(UPID upid, std::unique_ptr<PIDInfo> pid_info) {
     DCHECK(pid_info != nullptr);
     DCHECK_EQ(pid_info->stop_time_ns(), 0);
 
     pids_by_upid_[upid] = std::move(pid_info);
     upids_.insert(upid);
+  }
+
+  // The cgroups have to be tracked for all of time in order to support lookups.
+  /* void MarkCgroupStopped(uint64_t cgroup_id) { */
+  /*     cgroups_.erase(cgroup_id); */
+  /* } */
+
+  StatusOr<UID> GetCgroupPodId(uint64_t cgroup_id) const {
+      auto iter = cgroups_.find(cgroup_id);
+      if (iter == cgroups_.end()) {
+          return error::NotFound("Unable to find cgroup with id $0", cgroup_id);
+      }
+      return iter->second;
   }
 
   void MarkUPIDAsStopped(UPID upid, int64_t ts) {
@@ -447,6 +469,11 @@ class AgentMetadataState : NotCopyable {
    * Mapping of PIDs by UPID for active pods on the system.
    */
   absl::flat_hash_map<UPID, PIDInfoUPtr> pids_by_upid_;
+
+  /**
+   * Mapping of cgroup ids to Pod IDs
+   */
+  absl::flat_hash_map<uint64_t, UID> cgroups_;
 
   /**
    * All active UPIDs. Unlike pids_by_upid_, this does not contain stopped pids.

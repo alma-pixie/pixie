@@ -198,7 +198,7 @@ TEST_P(NonVecSyscallTests, NonVecSyscalls) {
     EXPECT_EQ(1, records[kHTTPMajorVersionIdx]->Get<types::Int64Value>(1).val);
     EXPECT_EQ(static_cast<uint64_t>(HTTPContentType::kJSON),
               records[kHTTPContentTypeIdx]->Get<types::Int64Value>(1).val);
-    EXPECT_EQ(system.ServerCGID(), records[kHTTPCGIDIdx]->Get<types::Int64Value>(0).val);
+    EXPECT_EQ(system.ServerCGID(), records[kHTTPCGIDIdx]->Get<types::UInt128Value>(0).Low64());
   }
 }
 
@@ -258,7 +258,7 @@ TEST_P(IOVecSyscallTests, IOVecSyscalls) {
     EXPECT_THAT(std::string(records[kHTTPRespBodyIdx]->Get<types::StringValue>(1)), StrEq("bc"));
     EXPECT_THAT(std::string(records[kHTTPRespMessageIdx]->Get<types::StringValue>(1)),
                 StrEq("Not Found"));
-    EXPECT_EQ(system.ServerCGID(), records[kHTTPCGIDIdx]->Get<types::Int64Value>(0).val);
+    EXPECT_EQ(system.ServerCGID(), records[kHTTPCGIDIdx]->Get<types::UInt128Value>(0).Low64());
   }
 
   if (p.trace_role & kRoleClient) {
@@ -426,7 +426,7 @@ TEST_F(SocketTraceBPFTest, MultipleConnections) {
 
     ASSERT_THAT(records, RecordBatchSizeIs(1));
     EXPECT_THAT(records[kHTTPRespHeadersIdx]->Get<types::StringValue>(0), HasSubstr("msg1"));
-    EXPECT_EQ(system1.ServerCGID(), records[kHTTPCGIDIdx]->Get<types::Int64Value>(0).val);
+    EXPECT_EQ(system1.ServerCGID(), records[kHTTPCGIDIdx]->Get<types::UInt128Value>(0).Low64());
   }
 
   {
@@ -435,7 +435,7 @@ TEST_F(SocketTraceBPFTest, MultipleConnections) {
 
     ASSERT_THAT(records, RecordBatchSizeIs(1));
     EXPECT_THAT(records[kHTTPRespHeadersIdx]->Get<types::StringValue>(0), HasSubstr("msg2"));
-    EXPECT_EQ(system2.ServerCGID(), records[kHTTPCGIDIdx]->Get<types::Int64Value>(0).val);
+    EXPECT_EQ(system2.ServerCGID(), records[kHTTPCGIDIdx]->Get<types::UInt128Value>(0).Low64());
   }
 }
 

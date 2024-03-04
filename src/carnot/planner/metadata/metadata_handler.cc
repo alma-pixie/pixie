@@ -56,6 +56,9 @@ std::unique_ptr<MetadataHandler> MetadataHandler::Create() {
       {MetadataType::UPID, MetadataType::SERVICE_ID, MetadataType::POD_ID, MetadataType::POD_NAME});
   handler->AddObject<NameMetadataProperty>(MetadataType::POD_NAME, {"pod"},
                                            {MetadataType::UPID, MetadataType::POD_ID});
+  // TODO(alma): This could potentially be merged with the preceeding definition.
+  handler->AddObject<NameMetadataProperty>(MetadataType::POD_CGROUP, {"cgroup"},
+                                           {MetadataType::CGID, MetadataType::POD_ID});
   handler->AddObject<NameMetadataProperty>(
       MetadataType::DEPLOYMENT_NAME, {"deployment"},
       {MetadataType::UPID, MetadataType::DEPLOYMENT_ID, MetadataType::POD_ID,

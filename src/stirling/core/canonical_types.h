@@ -49,7 +49,7 @@ constexpr std::string_view kCGIDColName = "cgid";
 constexpr DataElement kCGID = {
     kCGIDColName,
     "The cgroup id that the process was in when this probe was triggered.",
-    types::DataType::INT64,
+    types::DataType::UINT128,
     types::SemanticType::ST_NONE,
     types::PatternType::GENERAL};
 
